@@ -3,19 +3,29 @@ from config import *
 
 import sqlite3
 import telebot
+import datetime
 
 # telegram
 
 bot = telebot.TeleBot(TOKEN)
 lang = 'ru'
 datas = {}
+stack_datas = []
+time = 15 * 60
 
 
 @bot.message_handler(commands=['help'])
 def help_msg(message):
+    global datas, stack_datas
     if message.chat.id in datas:
         del datas[message.chat.id]
-    img = Image.open(r'/Users/floppa/Downloads/Telegram Desktop/CollageBot/sample.jpg')
+    while stack_datas and (stack_datas[0][0] - datetime.datetime.now()).seconds >= time:
+        if stack_datas[0][1] in datas and datas[stack_datas[0][1]][1] != stack_datas[0][0]:
+            break
+        elif stack_datas[0][1] in datas:
+            del datas[stack_datas[0][1]]
+        stack_datas.pop(0)
+    img = Image.open(r'sample.jpg')
     bot.send_message(message.chat.id, messages["help_message"])
     bot.send_photo(message.chat.id, photo=get_bytes_from_image(img))
     bot.send_message(message.chat.id, messages["send_photo_before"])
@@ -24,8 +34,15 @@ def help_msg(message):
 
 @bot.message_handler(commands=['start'])
 def menu(message):
+    global datas, stack_datas
     if message.chat.id in datas:
         del datas[message.chat.id]
+    while stack_datas and (stack_datas[0][0] - datetime.datetime.now()).seconds >= time:
+        if stack_datas[0][1] in datas and datas[stack_datas[0][1]][1] != stack_datas[0][0]:
+            break
+        elif stack_datas[0][1] in datas:
+            del datas[stack_datas[0][1]]
+        stack_datas.pop(0)
     connection = sqlite3.connect('db')
     cursor = connection.cursor()
 
@@ -33,7 +50,7 @@ def menu(message):
                    (message.chat.id,))
     user = cursor.fetchall()
     if len(user) == 0:
-        bot.send_message(message.chat.id, messages["welcome-message"])
+        bot.send_message(message.chat.id, messages["welcome_message"])
         img = Image.open('sample.jpg')
         bot.send_photo(message.chat.id, photo=get_bytes_from_image(img))
         cursor.execute('''INSERT INTO USERS (ID, NUMBER_OF_GENERATION) VALUES (?, 0)''',
@@ -47,8 +64,15 @@ def menu(message):
 
 
 def photo_before(message):
+    global datas, stack_datas
     if message.chat.id in datas:
         del datas[message.chat.id]
+    while stack_datas and (stack_datas[0][0] - datetime.datetime.now()).seconds >= time:
+        if stack_datas[0][1] in datas and datas[stack_datas[0][1]][1] != stack_datas[0][0]:
+            break
+        elif stack_datas[0][1] in datas:
+            del datas[stack_datas[0][1]]
+        stack_datas.pop(0)
     if message.text == messages['start']:
         bot.send_message(message.chat.id, messages["send_photo_before"])
         bot.register_next_step_handler(message, photo_before)
@@ -71,8 +95,15 @@ def photo_before(message):
 
 
 def photo_before_text(message, data):
+    global datas, stack_datas
     if message.chat.id in datas:
         del datas[message.chat.id]
+    while stack_datas and (stack_datas[0][0] - datetime.datetime.now()).seconds >= time:
+        if stack_datas[0][1] in datas and datas[stack_datas[0][1]][1] != stack_datas[0][0]:
+            break
+        elif stack_datas[0][1] in datas:
+            del datas[stack_datas[0][1]]
+        stack_datas.pop(0)
     if message.text == messages['start']:
         bot.send_message(message.chat.id, messages["send_photo_before"])
         bot.register_next_step_handler(message, photo_before)
@@ -90,8 +121,15 @@ def photo_before_text(message, data):
 
 
 def photo_after(message, data):
+    global datas, stack_datas
     if message.chat.id in datas:
         del datas[message.chat.id]
+    while stack_datas and (stack_datas[0][0] - datetime.datetime.now()).seconds >= time:
+        if stack_datas[0][1] in datas and datas[stack_datas[0][1]][1] != stack_datas[0][0]:
+            break
+        elif stack_datas[0][1] in datas:
+            del datas[stack_datas[0][1]]
+        stack_datas.pop(0)
     if message.text == messages['start']:
         bot.send_message(message.chat.id, messages["send_photo_before"])
         bot.register_next_step_handler(message, photo_before)
@@ -114,8 +152,15 @@ def photo_after(message, data):
 
 
 def photo_after_text(message, data):
+    global datas, stack_datas
     if message.chat.id in datas:
         del datas[message.chat.id]
+    while stack_datas and (stack_datas[0][0] - datetime.datetime.now()).seconds >= time:
+        if stack_datas[0][1] in datas and datas[stack_datas[0][1]][1] != stack_datas[0][0]:
+            break
+        elif stack_datas[0][1] in datas:
+            del datas[stack_datas[0][1]]
+        stack_datas.pop(0)
     if message.text == messages['start']:
         bot.send_message(message.chat.id, messages["send_photo_before"])
         bot.register_next_step_handler(message, photo_before)
@@ -133,9 +178,12 @@ def photo_after_text(message, data):
 
 
 def send_photo(message, data):
-    global datas
+    global datas, stack_datas
     new_image = create_image(data)
-    datas[message.chat.id] = data
+    time = datetime.datetime.now()
+    datas[message.chat.id] = [data, time]
+    stack_datas.append((time, message.chat.id))
+
     keyboard = telebot.types.InlineKeyboardMarkup()
     button_save = telebot.types.InlineKeyboardButton(text="НОВЫЙ КОЛЛАЖ",
                                                      callback_data='save_data')
@@ -156,8 +204,15 @@ def send_photo(message, data):
 
 
 def all_text(message, data):
+    global datas, stack_datas
     if message.chat.id in datas:
         del datas[message.chat.id]
+    while stack_datas and (stack_datas[0][0] - datetime.datetime.now()).seconds >= time:
+        if stack_datas[0][1] in datas and datas[stack_datas[0][1]][1] != stack_datas[0][0]:
+            break
+        elif stack_datas[0][1] in datas:
+            del datas[stack_datas[0][1]]
+        stack_datas.pop(0)
     if message.text == messages['start']:
         bot.send_message(message.chat.id, messages["send_photo_before"])
         bot.register_next_step_handler(message, photo_before)
@@ -175,8 +230,8 @@ def all_text(message, data):
 
         cursor.execute('''SELECT NUMBER_OF_GENERATION FROM USERS WHERE ID=?''',
                        (message.chat.id,))
-        number_of_generation = cursor.fetchall()
-        cursor.execute('''UPDATE LANGUAGE SET NUMBER_OF_GENERATION=? WHERE ID=?''',
+        number_of_generation = cursor.fetchall()[0][0]
+        cursor.execute('''UPDATE USERS SET NUMBER_OF_GENERATION=? WHERE ID=?''',
                        (number_of_generation + 1, message.chat.id,))
         connection.commit()
         connection.close()
@@ -186,6 +241,7 @@ def all_text(message, data):
 @bot.callback_query_handler(
     func=lambda call: call.data == 'change_photo_before')
 def change_photo_before_message(call):
+    global datas
     chat_id = call.message.chat.id
     message_id = call.message.message_id
 
@@ -198,7 +254,7 @@ def change_photo_before_message(call):
     else:
         bot.send_message(call.message.chat.id, 'Новое фото или измените формат кадра, лучше ближе к 3х4')
         bot.send_message(call.message.chat.id, messages['send_photo_before'])
-        data = datas[call.message.chat.id]
+        data = datas[call.message.chat.id][0]
         del datas[call.message.chat.id]
         bot.register_next_step_handler(call.message, change_photo_before, data)
 
@@ -227,6 +283,7 @@ def change_photo_before(message, data):
 @bot.callback_query_handler(
     func=lambda call: call.data == 'change_photo_after')
 def change_photo_after_message(call):
+    global datas
     chat_id = call.message.chat.id
     message_id = call.message.message_id
 
@@ -239,7 +296,7 @@ def change_photo_after_message(call):
     else:
         bot.send_message(call.message.chat.id, 'Новое фото или измените формат кадра, лучше ближе к 3х4')
         bot.send_message(call.message.chat.id, messages['send_photo_after'])
-        data = datas[call.message.chat.id]
+        data = datas[call.message.chat.id][0]
         del datas[call.message.chat.id]
         bot.register_next_step_handler(call.message, change_photo_after, data)
 
@@ -268,6 +325,7 @@ def change_photo_after(message, data):
 @bot.callback_query_handler(
     func=lambda call: call.data == 'change_text_all')
 def change_text_all_message(call):
+    global datas
     chat_id = call.message.chat.id
     message_id = call.message.message_id
 
@@ -279,7 +337,7 @@ def change_text_all_message(call):
         bot.register_next_step_handler(call.message, photo_before)
     else:
         bot.send_message(call.message.chat.id, messages['comment'])
-        data = datas[call.message.chat.id]
+        data = datas[call.message.chat.id][0]
         del datas[call.message.chat.id]
         bot.register_next_step_handler(call.message, change_text_all, data)
 
@@ -303,6 +361,7 @@ def change_text_all(message, data):
 @bot.callback_query_handler(
     func=lambda call: call.data == 'save_data')
 def start_call(call):
+    global datas
     chat_id = call.message.chat.id
     message_id = call.message.message_id
 
@@ -321,6 +380,7 @@ def start_call(call):
 @bot.callback_query_handler(
     func=lambda call: call.data == 'change_text_after')
 def change_text_after_message(call):
+    global datas
     chat_id = call.message.chat.id
     message_id = call.message.message_id
     bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id,
@@ -331,7 +391,7 @@ def change_text_after_message(call):
         bot.register_next_step_handler(call.message, photo_before)
     else:
         bot.send_message(call.message.chat.id, messages['send_text_before'])
-        data = datas[call.message.chat.id]
+        data = datas[call.message.chat.id][0]
         del datas[call.message.chat.id]
         bot.register_next_step_handler(call.message, change_text_after, data)
 
@@ -355,6 +415,7 @@ def change_text_after(message, data):
 @bot.callback_query_handler(
     func=lambda call: call.data == 'change_text_before')
 def change_text_before_message(call):
+    global datas
     chat_id = call.message.chat.id
     message_id = call.message.message_id
 
@@ -366,7 +427,7 @@ def change_text_before_message(call):
         bot.register_next_step_handler(call.message, photo_before)
     else:
         bot.send_message(call.message.chat.id, messages['send_text_before'])
-        data = datas[call.message.chat.id]
+        data = datas[call.message.chat.id][0]
         del datas[call.message.chat.id]
         bot.register_next_step_handler(call.message, change_text_before, data)
 
