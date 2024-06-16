@@ -448,4 +448,4 @@ def change_text_before(message, data):
         send_photo(message, data)
 
 
-bot.polling()
+bot.infinity_polling()
