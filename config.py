@@ -1,4 +1,4 @@
-TOKEN = '7351961057:AAHuAlRegK8zgewJIImFRcN3_vjCiVN1OW0' # token from @BotFather
+TOKEN = '' # token from @BotFather
 messages = {
     'start_message': "Вы хотите создать новый коллаж?",
     'create': 'Создать',
